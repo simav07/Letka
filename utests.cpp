@@ -88,6 +88,7 @@ int StartCase(char filename[]) {
 int RunOneTest(TestCase test, int test_count) {
 
     double x1 = NAN, x2 = NAN;
+    
     int roots = solve_square(test.a, test.b, test.c, &x1, &x2);
 
     //! Сортируем (x1,x2) по возрастанию + NAN помещаем в x1
