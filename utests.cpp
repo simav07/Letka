@@ -11,6 +11,7 @@ int RunOneTest(TestCase test, int test_count);
 
 //! Функция записывает неправильный тест в лог-файл
 int WriteIncorrectTest(TestCase test, int test_count, double x1, double x2, char filename[]);
+
 //! Генерирует коэффициенты для случайного уравнения
 void MakeCoeffs(double *a, double *b, double *c, int *roots, double *rand_x1, double *rand_x2);
 
