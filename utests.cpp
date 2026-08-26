@@ -2,45 +2,44 @@
 
 #define MIN_RANDOM_NUM 0.1
 
-//! Функция получения коэффициентов a, b, c из строки buf
+//! Function to extract coefficients a, b, c from string buf
 int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, double *x1_exp, double *x2_exp);
 
-//! Функция запуска одного теста с выводом результата squared,
-//! возвращает 0 или 1 (ошибка/успех)
+//! Function to run a single test and output the result of squared,
+//! returns 0 or 1 (fail/success)
 int RunOneTest(TestCase test, int test_count);
 
-//! Функция записывает неправильный тест в лог-файл
+//! Function writes an incorrect test to the log file
 int WriteIncorrectTest(TestCase test, int test_count, double x1, double x2, char filename[]);
-
-//! Генерирует коэффициенты для случайного уравнения
+//! Generates coefficients for a random equation
 void MakeCoeffs(double *a, double *b, double *c, int *roots, double *rand_x1, double *rand_x2);
 
-//! Функция записи в файл
+//! Function to write to file
 int WriteRandomEq(char filename[]);
 
-//! Функция записи структуры
+//! Function to write structure
 int WriteStruct(TestCase test, char buffer[], int size_of_buffer);
 
-//! Функция запуска тестов из файла filename
+//! Function to run tests from the file filename
 int StartCase(char filename[]);
 
 int RunTests() {
 
     char buf[BUFSIZE] = "";
 
-    //! Генерируем в файл случайные (рандомные) коэффициенты и записываем их
+    //! Generate random coefficients and write them to a file
     snprintf(buf, BUFSIZE, "%s", RANDOM_COEFF_FILENAME);
     WriteRandomEq(buf);
 
-    //! Запускаем тесты из этого файла
-    printf(YELLOW "\nЗапуск тестов со случайными коэффициентами:\n" RESET);
+    //! Run tests from this file
+    printf(YELLOW "\nRunning tests with random coefficients:\n" RESET);
     StartCase(buf);
 
-    memset(buf, 0, BUFSIZE); // очищаем буфер
+    memset(buf, 0, BUFSIZE); // clear buffer
 
-    //! Запускаем тесты из стандартного файла
+    //! Run tests from the standard file
     snprintf(buf, BUFSIZE, "%s", STANDART_COEFF_FILENAME);
-    printf(YELLOW "\nЗапуск тестов из стандартного файла:\n" RESET);
+    printf(YELLOW "\nRunning tests from the standard file:\n" RESET);
     StartCase(buf);
 
     return PASS;
@@ -52,14 +51,14 @@ int StartCase(char filename[]) {
     FILE *file_p = fopen(filename, "r");
     
     if (!file_p) {
-        printf("Ошибка открытия файла: <%s>\n", filename);
+        printf("Error opening file: <%s>\n", filename);
         return END;
     }
 
-    char buffer[BUFSIZE] = "";  //!< буфер для чтения i-й строки из файла
+    char buffer[BUFSIZE] = "";  //!< buffer for reading the i-th line from the file
 
-    int success_tests = 0;      //!< количество успешных тестов
-    int all_tests = 0;          //!< общее количество тестов
+    int success_tests = 0;      //!< number of successful tests
+    int all_tests = 0;          //!< total number of tests
 
     while (fgets(buffer, BUFSIZE, file_p) != NULL) {
 
@@ -69,13 +68,13 @@ int StartCase(char filename[]) {
 
         if (get_coeffs(buffer, &test.a, &test.b, &test.c, &test.roots, &test.x1_exp, &test.x2_exp) != PASS) {
 
-            all_tests--;  //! убираем неправильную строку, так как она не является тестом
+            all_tests--;  //! remove the incorrect line since it is not a test
             continue;
         
         }
 
-        //! Проверяем коэффициенты и запускаем тест
-        success_tests += RunOneTest(test, all_tests); //!< если тест пройден, то увеличиваем счётчик на 1
+        //! Check coefficients and run the test
+        success_tests += RunOneTest(test, all_tests); //!< if the test passes, increment the counter by 1
 
     }
 
@@ -89,10 +88,9 @@ int StartCase(char filename[]) {
 int RunOneTest(TestCase test, int test_count) {
 
     double x1 = NAN, x2 = NAN;
-    
     int roots = solve_square(test.a, test.b, test.c, &x1, &x2);
 
-    //! Сортируем (x1,x2) по возрастанию + NAN помещаем в x1
+    //! Sort (x1,x2) in ascending order + place NAN in x1
     sort_x(&x1, &x2);
 
     double x1_exp = test.x1_exp;
@@ -102,25 +100,25 @@ int RunOneTest(TestCase test, int test_count) {
 
     if (roots == test.roots) {
 
-        if (isnan(x2) && isnan(x2_exp)) { //! если оба корня nan
+        if (isnan(x2) && isnan(x2_exp)) { //! if both roots are nan
             
-            return 1;  //! успех, 0 корней
+            return 1;  //! success, 0 roots
         
         }
-        else if (!isnan(x2) && !isnan(x2_exp)) {  //!< x2 и x2_exp не NAN
+        else if (!isnan(x2) && !isnan(x2_exp)) {  //!< x2 and x2_exp are not NAN
 
             if (isEqual(x2, x2_exp, EPS)) {
 
                 if (!isnan(x1) && !isnan(x1_exp)) {
 
                     if (isEqual(x1, x1_exp, EPS))
-                        return 1;  //! успех - 2 корня
+                        return 1;  //! success - 2 roots
                     
                 }
 
-                else if (isnan(x1) && isnan(x1_exp)) {  //! x1 и x1_exp - NAN, x2 и x2_exp не NAN
+                else if (isnan(x1) && isnan(x1_exp)) {  //! x1 and x1_exp are NAN, x2 and x2_exp are not NAN
 
-                    return 1;   //! успех - 1 корень x2
+                    return 1;   //! success - 1 root (x2)
                 
                 }
 
@@ -144,12 +142,12 @@ int WriteIncorrectTest(TestCase test, int test_count, double x1, double x2, char
     FILE *file_p = fopen(filename, "a");
     
     if (!file_p) {
-        printf("Ошибка открытия файла: <%s>\n", filename);
+        printf("Error opening file: <%s>\n", filename);
         return END;
     }    
 
     fprintf(file_p, "Date: %s, time: %s\n"
-                    "Test %d: \nIncorrect: x1 = %lg, x2 = %lg\n"
+                    "Test #%d: \nIncorrect: x1 = %lg, x2 = %lg\n"
                                     "Expected: x1_exp = %lg, x2_exp = %lg\n\n",
                                     __DATE__, __TIME__,
                                     test_count, x1, x2, test.x1_exp, test.x2_exp);
@@ -167,7 +165,7 @@ int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, doub
     ASSERT(x1_exp);
     ASSERT(x2_exp);
 
-    if (sscanf(buf, "%lf %lf %lf %d %lf %lf", a, b, c, roots_exp, x1_exp, x2_exp) == 6) {  //! если всё считалось
+    if (sscanf(buf, "%lf %lf %lf %d %lf %lf", a, b, c, roots_exp, x1_exp, x2_exp) == 6) {  //! if everything was read successfully
 
         return PASS;
     }
@@ -188,7 +186,7 @@ int sort_x(double *x_1, double *x_2) {
 
             *x_2 = *x_1;
             *x_1 = NAN;
-            //! помещаем NAN (если есть) всегда в x_1
+            //! place NAN (if present) always in x_1
             return PASS;
         }
 
@@ -210,7 +208,7 @@ int WriteRandomEq(char filename[]) {
     FILE *file_p = fopen(filename, "w");
     
     if (!file_p) {
-        printf("Ошибка открытия файла: <%s>\n", filename);
+        printf("Error opening file: <%s>\n", filename);
         return END;
     }
 
@@ -219,16 +217,16 @@ int WriteRandomEq(char filename[]) {
     for (unsigned int i = 0; i < N_RANDOM_TESTS; i++) {
 
         TestCase test = {0};
-        //! генерируем коэффициенты
+        //! generate coefficients
         MakeCoeffs(&test.a, &test.b, &test.c, &test.roots, &test.x1_exp, &test.x2_exp);
 
-        //! записываем уравнение в буфер и выводим в файл
+        //! write the equation to the buffer and output to the file
         char buffer[BUFSIZE] = "";
 
         int n_fields = WriteStruct(test, buffer, sizeof(buffer));
 
         if (n_fields < 0) {
-            printf("Ошибка записи структуры\n");
+            printf("Error writing structure\n");
             return END;
         }
 
