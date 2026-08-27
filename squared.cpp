@@ -1,31 +1,50 @@
 #include "squared.h"
 #include <math.h>
 #include <time.h>
-//! Флажок на включение/выключение режима ИИ: 1 - вкл, 0 - выкл
-#define AI_MOD 0
+
 #define AI_SLEEP_TIME 4
+
 //! Отслеживание режима работы
 #define START_TESTS    1  //!< Режим начала работы юнит-тестов
 #define KEYBOARD_INPUT 2  //!< Режим ручного ввода
 #define WORK_OFF       0  //!< Выход из программы
-#define WORK_ON        1  //!< Работа пользовательского режима
+#define WORK_ON       10  //!< Работа пользовательского режима
+
+// CamelCase 
+// pascalCase 
+// snake_case 
+// CAPS_CASE
+
 //! Возможные варианты решения уравнения
-int getline(char s[], int lim);  //!< Функция читающая ввод пользователя
-int getInput(TestCase *test);    //!< Функция, получающая коэффициенты
-void getOutput(int nroots, double x1, double x2); //!< Функция, выводящая ответ пользователю
-int greet();  //!< AI - приветствие
-int deep_think(int is_aiMode);  //!< Генерация сообщения о мыслительном процессе
-int isZero(double numbr, double epsilon);  //!< Проверка double на ноль
+int GetLine(char s[], int lim);  //!< Функция читающая ввод пользователя
+
+int GetInput(TestCase *test);    //!< Функция, получающая коэффициенты
+void GetOutput(int nroots, double x1, double x2); //!< Функция, выводящая ответ пользователю
+
+int Greet();  //!< AI - приветствие
+
+int DeepThink(int is_aiMode);  //!< Генерация сообщения о мыслительном процессе
+
+int IsZero(double numbr, double epsilon);  //!< Проверка double на ноль
+
 int SolveStandartCase(double a, double b, double c, double *x1, double *x2); //!< Решение при НЕнулевых коэффициентах
 int SolveSpecialCase(double a, double b, double c, double *x1, double *x2);  //!< Решение для частных случаев
+
 void RunMultipleLaunch(); //!< запуск всей программы
-int RunConsoleMode(char *argv[]); //!< Режим работы в определенном режиме
-int RunStandartMode();            //!< Режим работы в обычном пользовательском режиме
+
+int RunConsoleMode(int indx, char *argv[]); //!< Режим работы в определенном режиме
+int RunStandartMode();                      //!< Режим работы в обычном пользовательском режиме
+
 int main(int argc, char *argv[]) {
+
+    ASSERT(argv);
+
     //! Если введены какие либо флаги
-    if (argc > 1) 
-        RunConsoleMode(argv);
-    
+    if (argc > 1)
+        if (argc == 2)
+            RunConsoleMode(argc-1, argv);
+        else
+            printf(RED "\nToo many arguments\n" RESET);
     else {
         RunStandartMode();
     
@@ -33,77 +52,118 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-int RunConsoleMode(char *argv[]) {
+int RunConsoleMode(int indx, char *argv[]) {
 
-    if (*(argv[1]) == 't') {
+    ASSERT(argv);
 
+    if (!strcmp(argv[indx], UTESTS_MODE)) {   //! Режим юнит тестов
         RunTests();
         printf("Тесты выполнены.\n");
-        }
-    else if (*(argv[1]) == 'h')
-        HelpInfo();
+    }
+
+    else if (!strcmp(argv[indx], USER_MODE)) {
+        RunStandartMode();
+    }
+
+    else if (!strcmp(argv[indx], HELP_MODE)) //! Вывод справочной информации
+        HelpConsoleInfo();
+    
+    else {
+        printf("Flag scanning error\n");
+    }
 
     return PASS;
 }
 
 int RunStandartMode() {
+
     printf("Привет! Меня зовут КотИИк. О чем хотели бы пообщаться?\n");
     HelpInfo();
     RunMultipleLaunch();
+
     return 0;
 }
-int greet() {
+
+int Greet() {
+
     char ignore_line[MAXLINE] = "";
-    char mode = '\0';
-    getline(ignore_line, sizeof(ignore_line));
-    if (sscanf(ignore_line, "%c", &mode)) {
-        if (mode == 't')
-            return START_TESTS; //!< Старт юнит-тестов
-        
-        if (mode == '0')
-        
-            return WORK_OFF;    //!< Прекращение работы программы
-        
-        if (mode == '1') {
-            deep_think(AI_MOD);
-            printf("Какая прекрасная тема для разговора! Для начала можем порешать квадратное уравнение.\n");
-            return KEYBOARD_INPUT;
+    char mode[MAXLINE] = "";
+
+    GetLine(ignore_line, sizeof(ignore_line));
+
+    int nLastSymb = 0;
+
+    if (sscanf(ignore_line, "%s %n", mode, &nLastSymb) == 1) {
+
+        if (ignore_line[nLastSymb-1] == '\n') {
+            if (!strcmp(mode, "tests"))
+                return START_TESTS; //!< Старт юнит-тестов
+            
+            if (!strcmp(mode, "end"))
+            
+                return WORK_OFF;    //!< Прекращение работы программы
+            
+            if (!strcmp(mode, "start")) {
+                DeepThink(AI_MOD);
+                printf("Какая прекрасная тема для разговора! Для начала можем порешать квадратное уравнение.\n");
+                return KEYBOARD_INPUT;
+            }
         }
+        printf(RED "Input error\n" RESET);
+        return WORK_ON;
     }
+
     printf("Ошибка чтения ввода. Программа завершена\n");
     return WORK_OFF;
 }
+
 void RunMultipleLaunch() {
+
     int work = WORK_ON;
+
     do {
-        int mode = greet();
+        int mode = Greet();
         TestCase test = {0};
         double x1 = 0, x2 = 0;
+
         if (mode == KEYBOARD_INPUT) {  //! Режим ручного ввода
-            if (getInput(&test) == 1)  {   //! Если ввод удачный
+            if (GetInput(&test) == 1)  {   //! Если ввод удачный
         
-                int nroots = solve_square(test.a, test.b, test.c, &x1, &x2);
-                getOutput(nroots, x1, x2);
-                printf("Поздравляю! Вы решили квадратное уравнение. Хотели бы продолжить?\n");
+                int nroots = SolveSquare(test.a, test.b, test.c, &x1, &x2);
+
+                GetOutput(nroots, x1, x2);
+                printf("\nПоздравляю! Вы решили квадратное уравнение. Хотели бы продолжить?\n");
                 HelpInfo();
+
                 continue;                
             }
+
             work = WORK_OFF; //! Если все попытки ввода неудачны - заканчиваем
         }
         if (mode == START_TESTS) {
+
             RunTests();
             printf("Тесты выполнены. Хотели бы продолжить?\n");
             HelpInfo();
+
+            continue;
+        }
+        if (mode == WORK_ON) {
+            printf("\nПопробуйте еще раз:\n");
             continue;
         }
         else
-            work = WORK_OFF;        
+            work = WORK_OFF;  
+      
     } while(work != WORK_OFF);
 }
 
-int deep_think(int is_aiMode) {
+int DeepThink(int is_aiMode) {
+
     srand((int)time(NULL));
+    
     int question = rand() % 5 + 1;  // Переменная, отвечающая за выбор рандомного вопроса
+    
     //! Если режим ИИ включен
     if (is_aiMode)
     {
@@ -135,17 +195,20 @@ int deep_think(int is_aiMode) {
     }
     return 0;
 }
+
 /// Функция получения удачного разультата - коэффициентов a, b, c
 /// Если с 5 раза не получается, программа завершает работу
-int getInput(TestCase *test) { //-------------------------------struct
+int GetInput(TestCase *test) {
+
     ASSERT(test);
+
     for (int i = 0; i < N_USER_INPUTS; i++)
     {
         char line[MAXLINE] = "";
         printf("Введите коэффициенты a, b, c: ");
         
-        getline(line, sizeof(line));
-        deep_think(AI_MOD);
+        GetLine(line, sizeof(line));
+        DeepThink(AI_MOD);
         int nLastSymb = 0;
         if (sscanf(line, "%lf %lf %lf %n", &((*test).a), &((*test).b), &((*test).c), &nLastSymb) == 3) {
             if (line[nLastSymb-1] == '\n')
@@ -155,12 +218,13 @@ int getInput(TestCase *test) { //-------------------------------struct
         printf(RED "Хм, не могу понять ввод.\nПожалуйста, введите 3 числа: a, b, c.\n" RESET);
     }
     /// Если ввод неудачный - выводим 0
-    deep_think(AI_MOD);
+    DeepThink(AI_MOD);
     printf("Мда, кажется нам не удастся поговорить :`(((((");
     return 0;
 }
 
-void getOutput(int nroots, double x1, double x2) {
+void GetOutput(int nroots, double x1, double x2) {
+
     switch (nroots)
         {
         case (ONEROOT):
@@ -182,7 +246,11 @@ void getOutput(int nroots, double x1, double x2) {
         }
     return;
 }
-int isZero(double numbr, double epsilon) {
+int IsZero(double numbr, double epsilon) {
+
+    ASSERT(isfinite (numbr));
+    ASSERT(isfinite (epsilon));
+
     if (fabs(numbr) < epsilon) {
         return true;
     }
@@ -190,15 +258,16 @@ int isZero(double numbr, double epsilon) {
         return false;
     }
 }
-int solve_square(double a, double b, double c, double *x1, double *x2) {
-    /// Проверка указателей
-    ASSERT(std::isfinite (a));
-    ASSERT(std::isfinite (b));
-    ASSERT(std::isfinite (c));
+int SolveSquare(double a, double b, double c, double *x1, double *x2) {
+
+    ASSERT(isfinite (a));
+    ASSERT(isfinite (b));
+    ASSERT(isfinite (c));
     ASSERT(x1);
     ASSERT(x2);
+
     //! Когда один из коэффициентов равен нулю
-    if (isZero(a, EPS) || isZero(b, EPS) || isZero(c, EPS)) {
+    if (IsZero(a, EPS) || IsZero(b, EPS) || IsZero(c, EPS)) {
     //! То особый случай, аля-улю
         return SolveSpecialCase(a, b, c, x1, x2);
     
@@ -206,19 +275,25 @@ int solve_square(double a, double b, double c, double *x1, double *x2) {
     else {  //! Решение в общем случае, a, b, c != 0
         return SolveStandartCase(a, b, c, x1, x2);
     }
+
     return 0;
 }
 int SolveStandartCase(double a, double b, double c, double *x1, double *x2) {
+
     double dis = b * b - (4 * a * c);
-        deep_think(AI_MOD);
+
+        DeepThink(AI_MOD);
+
         //! Дискриминант равен нулю
-        if (isZero(dis, EPS)) {
+        if (IsZero(dis, EPS)) {
             *x1 = -b / (2 * a);
             *x2 = *x1;
             return ONEROOT;
         }
+
         else if (dis > 0) { //! Дискриминант больше нуля
             double sqrt_dis = sqrt(dis);
+
             *x1 = (-b + sqrt_dis) / (2 * a);
             *x2 = (-b - sqrt_dis) / (2 * a);
             return TWOROOTS;   //! указатель на то, что решение в действительных числах
@@ -226,13 +301,16 @@ int SolveStandartCase(double a, double b, double c, double *x1, double *x2) {
         else {             //! Нет действительных корней
             return NOROOTS;
         }
+
     return 0;
 }
 
 int SolveSpecialCase(double a, double b, double c, double *x1, double *x2) {
-    bool isNull_a = isZero(a, EPS);
-    bool isNull_b = isZero(b, EPS);
-    bool isNull_c = isZero(c, EPS);
+
+    bool isNull_a = IsZero(a, EPS);
+    bool isNull_b = IsZero(b, EPS);
+    bool isNull_c = IsZero(c, EPS);
+
     if (isNull_a) {   //! a = 0
         if (isNull_b) {
             if (isNull_c)   //! Бесконечное число корней
@@ -259,40 +337,63 @@ int SolveSpecialCase(double a, double b, double c, double *x1, double *x2) {
     }
     else if (isNull_c) {  //! c = 0; b != 0; a != 0
         *x2 = 0;
-        solve_square(0, a, b, x1, x2);
+        SolveSquare(0, a, b, x1, x2);
         return TWOROOTS;
     }
     return 0;
 }
-int isBigger(double p, double q, double epsilon) {
+
+int IsBigger(double p, double q, double epsilon) {
+
+    ASSERT(isfinite (p));
+    ASSERT(isfinite(q));
+    ASSERT(isfinite (epsilon));
+
     if ((p - q) > epsilon)
         return true;
     return false;
 }
-int getline(char s[], int lim) {
+
+int GetLine(char s[], int lim) {
+
     char chr = 0;
     int i = 0;
+
     while (((chr = (char) getchar()) != '\n') && (chr != EOF) && (i < lim)) {
         s[i] = chr;
         i++;
     }
+
     s[i] = '\n';
     return i;
 }
-int isEqual(double n, double m, double epsilon) {
-    ASSERT(std::isfinite (n));
-    ASSERT(std::isfinite (m));
-    ASSERT(std::isfinite (epsilon));
+
+int IsEqual(double n, double m, double epsilon) {
+
+    ASSERT(isfinite (n));
+    ASSERT(isfinite (m));
+    ASSERT(isfinite (epsilon));
+
     if (((n - epsilon) <= m) && ((n + epsilon) >= m)) {
         return PASS;
     }
     return END;
+
 }
 
 void HelpInfo() {
     printf(GREEN "/---------------------------------------------------------------/\n\n"
-                 "< 0 > - завершить работу программы\n"
-                 "< 1 > - ввести коэффициенты квадратного уравнения\n"
-                 "< t > - запустить юнит-тесты\n\n"
+                 "< end >   - завершить работу программы\n"
+                 "< start > - ввести коэффициенты квадратного уравнения\n"
+                 "< tests > - запустить юнит-тесты\n\n"
+                 "/---------------------------------------------------------------/\n" RESET);
+}
+
+void HelpConsoleInfo() {
+    printf(YELLOW "/---------------------------------------------------------------/\n\n"
+                 "Console commands:\n"
+                 "< --help > - вывести справочную информацию\n"
+                 "< --user > - пользовательский режим\n"
+                 "< --test > - запустить юнит-тесты\n\n"
                  "/---------------------------------------------------------------/\n" RESET);
 }

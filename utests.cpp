@@ -3,7 +3,7 @@
 #define MIN_RANDOM_NUM 0.1
 
 //! Function to extract coefficients a, b, c from string buf
-int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, double *x1_exp, double *x2_exp);
+int GetCoeffs(char buf[], double *a, double *b, double *c, int *roots_exp, double *x1_exp, double *x2_exp);
 
 //! Function to run a single test and output the result of squared,
 //! returns 0 or 1 (fail/success)
@@ -18,7 +18,7 @@ void MakeCoeffs(double *a, double *b, double *c, int *roots, double *rand_x1, do
 int WriteRandomEq(char filename[]);
 
 //! Function to write structure
-int WriteStruct(TestCase test, char buffer[], int size_of_buffer);
+int FillBufferFromStruct(TestCase test, char buffer[], int size_of_buffer);
 
 //! Function to run tests from the file filename
 int StartCase(char filename[]);
@@ -48,6 +48,8 @@ int RunTests() {
 
 int StartCase(char filename[]) {
 
+    ASSERT(filename);
+
     FILE *file_p = fopen(filename, "r");
     
     if (!file_p) {
@@ -66,7 +68,7 @@ int StartCase(char filename[]) {
 
         TestCase test = {0};
 
-        if (get_coeffs(buffer, &test.a, &test.b, &test.c, &test.roots, &test.x1_exp, &test.x2_exp) != PASS) {
+        if (GetCoeffs(buffer, &test.a, &test.b, &test.c, &test.roots, &test.x1_exp, &test.x2_exp) != PASS) {
 
             all_tests--;  //! remove the incorrect line since it is not a test
             continue;
@@ -88,15 +90,15 @@ int StartCase(char filename[]) {
 int RunOneTest(TestCase test, int test_count) {
 
     double x1 = NAN, x2 = NAN;
-    int roots = solve_square(test.a, test.b, test.c, &x1, &x2);
+    int roots = SolveSquare(test.a, test.b, test.c, &x1, &x2);
 
     //! Sort (x1,x2) in ascending order + place NAN in x1
-    sort_x(&x1, &x2);
+    SortX(&x1, &x2);
 
     double x1_exp = test.x1_exp;
     double x2_exp = test.x2_exp;
 
-    sort_x(&x1_exp, &x2_exp);
+    SortX(&x1_exp, &x2_exp);
 
     if (roots == test.roots) {
 
@@ -107,11 +109,11 @@ int RunOneTest(TestCase test, int test_count) {
         }
         else if (!isnan(x2) && !isnan(x2_exp)) {  //!< x2 and x2_exp are not NAN
 
-            if (isEqual(x2, x2_exp, EPS)) {
+            if (IsEqual(x2, x2_exp, EPS)) {
 
                 if (!isnan(x1) && !isnan(x1_exp)) {
 
-                    if (isEqual(x1, x1_exp, EPS))
+                    if (IsEqual(x1, x1_exp, EPS))
                         return 1;  //! success - 2 roots
                     
                 }
@@ -119,13 +121,9 @@ int RunOneTest(TestCase test, int test_count) {
                 else if (isnan(x1) && isnan(x1_exp)) {  //! x1 and x1_exp are NAN, x2 and x2_exp are not NAN
 
                     return 1;   //! success - 1 root (x2)
-                
                 }
-
             }
-
         }
-
     }
 
     char filename[BUFSIZE] = "";
@@ -138,6 +136,8 @@ int RunOneTest(TestCase test, int test_count) {
 }
 
 int WriteIncorrectTest(TestCase test, int test_count, double x1, double x2, char filename[]) {
+
+    ASSERT(filename);
 
     FILE *file_p = fopen(filename, "a");
     
@@ -156,7 +156,7 @@ int WriteIncorrectTest(TestCase test, int test_count, double x1, double x2, char
     return PASS;
 }
 
-int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, double *x1_exp, double *x2_exp) {
+int GetCoeffs(char buf[], double *a, double *b, double *c, int *roots_exp, double *x1_exp, double *x2_exp) {
 
     ASSERT(a);
     ASSERT(b);
@@ -165,7 +165,13 @@ int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, doub
     ASSERT(x1_exp);
     ASSERT(x2_exp);
 
-    if (sscanf(buf, "%lf %lf %lf %d %lf %lf", a, b, c, roots_exp, x1_exp, x2_exp) == 6) {  //! if everything was read successfully
+    ASSERT((a != b));
+    ASSERT((b != c));
+    ASSERT((a != c));
+    ASSERT((a != x1_exp));
+    ASSERT((x1_exp != x2_exp));
+
+    if (sscanf(buf, "%lf %lf %lf %d %lf %lf", a, b, c, roots_exp, x1_exp, x2_exp) == 6) {
 
         return PASS;
     }
@@ -173,10 +179,11 @@ int get_coeffs(char buf[], double *a, double *b, double *c, int *roots_exp, doub
     return END;
 }
 
-int sort_x(double *x_1, double *x_2) {
+int SortX(double *x_1, double *x_2) {
 
     ASSERT(x_1);
     ASSERT(x_2);
+    ASSERT((x_1 != x_2));
 
     double dop_x = 0;
 
@@ -192,7 +199,7 @@ int sort_x(double *x_1, double *x_2) {
 
     }
 
-    else if (isBigger(*x_1, *x_2, EPS)) {
+    else if (IsBigger(*x_1, *x_2, EPS)) {
 
         dop_x = *x_2;
         *x_2 = *x_1;
@@ -205,14 +212,14 @@ int sort_x(double *x_1, double *x_2) {
 
 int WriteRandomEq(char filename[]) {
 
+    ASSERT(filename);
+
     FILE *file_p = fopen(filename, "w");
     
     if (!file_p) {
-        printf("Error opening file: <%s>\n", filename);
+        printf("Error opening file: <%s>\n", filename); //----------------------------errno strerror
         return END;
     }
-
-    ASSERT(file_p);
 
     for (unsigned int i = 0; i < N_RANDOM_TESTS; i++) {
 
@@ -223,7 +230,7 @@ int WriteRandomEq(char filename[]) {
         //! write the equation to the buffer and output to the file
         char buffer[BUFSIZE] = "";
 
-        int n_fields = WriteStruct(test, buffer, sizeof(buffer));
+        int n_fields = FillBufferFromStruct(test, buffer, sizeof(buffer));
 
         if (n_fields < 0) {
             printf("Error writing structure\n");
@@ -249,6 +256,13 @@ void MakeCoeffs(double *a, double *b, double *c, int *roots, double *rand_x1, do
     ASSERT(rand_x1);
     ASSERT(rand_x2);
 
+    ASSERT((a != rand_x1));
+    ASSERT((a != rand_x2));
+    ASSERT((a != b));
+    ASSERT((a != c));
+    ASSERT((b != c));
+    ASSERT((rand_x1 != rand_x2));
+
     *rand_x1 = MIN_RANDOM_NUM + double(rand() % MAX_RANDOM_COEFF);
     *rand_x2 = MIN_RANDOM_NUM + double(rand() % MAX_RANDOM_COEFF);
 
@@ -258,11 +272,11 @@ void MakeCoeffs(double *a, double *b, double *c, int *roots, double *rand_x1, do
     *b = -((*rand_x1) + (*rand_x2)) * (*a);
 }
 
-int WriteStruct(TestCase test, char buffer[], int size_of_buffer) {
+int FillBufferFromStruct(TestCase test, char buffer[], int size_of_buffer) {
 
     ASSERT (buffer);
 
-    int n_fields = snprintf(buffer, size_of_buffer, "%10.2lf %15.2lf %15.2lf %3d %15.2lf %15.2lf\n",                  // define
+    int n_fields = snprintf(buffer, size_of_buffer, "%10.2lf %15.2lf %15.2lf %3d %15.2lf %15.2lf\n",                 
                                                     test.a, test.b, test.c, test.roots, test.x1_exp, test.x2_exp);
 
     return n_fields;

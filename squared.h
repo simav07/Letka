@@ -11,7 +11,10 @@
 //! Подключение цветов 
 #include "colors.h"
 
-#define ASSERT(right_instr) do { \
+#define MYDEBUG
+
+#ifdef MYDEBUG          //     __func__ __PRETTY_FUNCTION__ - назв функции  TXProcess error
+#define ASSERT(right_instr) do { \ 
     if (!right_instr) { \
         fprintf(stderr, "\nAssertion failed: (%s), file <%s>, line: %d\n\n", #right_instr, __FILE__, __LINE__); \
         printf(RED "Link to the line:\n" RESET); \
@@ -20,6 +23,10 @@
         abort(); \
     } \
 } while (0)
+#else
+#define ASSERT(right_instr) do { \
+        } while(0)
+#endif
 
 struct TestCase {
     double a, b, c;
@@ -45,36 +52,44 @@ struct TestCase {
 //! Максимальное значение коэффициентов в случайном тест-кейсе
 #define MAX_RANDOM_COEFF 1000
 
-enum
-    {
-    N_RANDOM_TESTS = 100,   //!< Количество случайных тестов
-    N_USER_INPUTS = 5,      //!< Количество пользовательских вводов
-    };
+// мб загнать в структуру
+const char UTESTS_MODE[] = "--test";
+const char HELP_MODE[]   = "--help";
+const char USER_MODE[]   = "--user";
+
+//! Флажок на включение/выключение режима ИИ: 1 - вкл, 0 - выкл
+const int AI_MOD = 0;
+
+const int N_RANDOM_TESTS = 100;    //!< Количество случайных тестов
+const int N_USER_INPUTS =  5;      //!< Количество пользовательских вводов
+
 
 //! Виды корней квадратного уравнения
 enum 
     {
-    NOROOTS = 0,    //!< Нет корней    
-    ONEROOT = 1,    //!< Один корень (или два совпадающих)
+    NOROOTS =  0,   //!< Нет корней    
+    ONEROOT =  1,   //!< Один корень (или два совпадающих)
     TWOROOTS = 2,   //!< Два различных корня, a не равно 0
     INF = -1,       //!< Бесконечное число корней
     };
 
-int solve_square(double a, double b, double c, double *x1, double *x2);     //! Функция, решающая квадратное 
+int SolveSquare(double a, double b, double c, double *x1, double *x2);     //! Функция, решающая квадратное 
                                                                             //! уравнение с коэффициентами a, b, c
-
 //! Функция запуска тестов для проверки решения
 int RunTests();
 
 //! Функция сравнения вещественных чисел double
-int isEqual(double n, double m, double epsilon);
+int IsEqual(double n, double m, double epsilon);
 
-int isBigger(double p, double q, double epsilon);
+int IsBigger(double p, double q, double epsilon);
 
 //! Сортирует корни по возрастанию (x_1 < x_2), чтобы сравнивать в определённом порядке
 //! Если один из корней NAN, то NAN помещается в x_1 (если оба x_1 и x_2 - NAN)
-int sort_x(double *x_1, double *x_2);
+int SortX(double *x_1, double *x_2);
 
-//! Вывод справки и информации о программе
+//! Вывод справки в пользовательском режиме
 void HelpInfo();
+
+//! Вывод справочной информации для консольного режима
+void HelpConsoleInfo();
 #endif
