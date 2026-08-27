@@ -27,7 +27,6 @@ int StartCase(char filename[]);
 int RunTests() {
 
     char buf[BUFSIZE] = "";
-
     //! Генерируем в файл случайные (рандомные) коэффициенты и записываем их
     snprintf(buf, BUFSIZE, "%s", RANDOM_COEFF_FILENAME);
     WriteRandomEq(buf);
